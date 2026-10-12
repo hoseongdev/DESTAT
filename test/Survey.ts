@@ -117,6 +117,7 @@ it("Survey init", async () => {
     surveyAddress,
     ethers.toBeHex(5, 32),
   );
+  console.log(Buffer.from(slot0Data.slice(2), "hex").toString("utf-8"));
   console.log(slot0Data);
   console.log(slot1Data);
   console.log(slot2Data);
