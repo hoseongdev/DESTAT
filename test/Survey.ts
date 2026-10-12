@@ -202,6 +202,9 @@ it("Survey storage layout", async () => {
   const decodeUni = (hex: string) =>
     Buffer.from(hex.slice(2), "hex").toString("utf-8");
 
+  const nextHash = (hex: string, i: number) =>
+    "0x" + (BigInt(hex) + BigInt(i)).toString(16);
+
   // primitive type
   console.log("primitive types");
   console.log(slot2Data);
@@ -217,4 +220,35 @@ it("Survey storage layout", async () => {
     pDesc,
   );
   console.log(decodeUni(desc));
+
+  // Array type: Question[] questions는 slot4에 length만 저장되고,
+  // 실제 원소(구조체 2칸씩)는 keccak256(slot4)부터 순서대로 저장된다.
+  // question1  <------------ pQuestions
+  // question1_option[] <-- pQuestions + 1
+  // question2  <------------ pQuestions + 2
+  // question2_option[] <-- pQuestions + 3
+  console.log("\n--- array type ---");
+  console.log("slot4Data", slot4Data);
+  const pQuestions = keccak256(ethers.toBeHex(4, 32));
+
+  const question1 = await ethers.provider.getStorage(
+    survey.getAddress(),
+    nextHash(pQuestions, 0),
+  );
+  const question1_option_array = await ethers.provider.getStorage(
+    survey.getAddress(),
+    nextHash(pQuestions, 1),
+  );
+  const question2 = await ethers.provider.getStorage(
+    survey.getAddress(),
+    nextHash(pQuestions, 2),
+  );
+  const question2_option_array = await ethers.provider.getStorage(
+    survey.getAddress(),
+    nextHash(pQuestions, 3),
+  );
+  console.log("question1", question1);
+  console.log("question1_option[]", question1_option_array);
+  console.log("question2", question2, decodeUni(question2));
+  console.log("question2_option[]", question2_option_array);
 });
