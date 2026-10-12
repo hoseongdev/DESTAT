@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { keccak256 } from "ethers";
 import { network } from "hardhat";
 
 interface Question {
@@ -91,40 +92,6 @@ it("Survey init", async () => {
   // 생성된 Survey에 연결
   const survey = await ethers.getContractAt("Survey", surveyAddress);
 
-  // storage slot 확인: title, description, targetNumber, rewardAmount,
-  // questions, answers 순서로 선언되어 slot 0~5에 각각 대응된다.
-  const slot0Data = await ethers.provider.getStorage(
-    surveyAddress,
-    ethers.toBeHex(0, 32),
-  );
-  const slot1Data = await ethers.provider.getStorage(
-    surveyAddress,
-    ethers.toBeHex(1, 32),
-  );
-  const slot2Data = await ethers.provider.getStorage(
-    surveyAddress,
-    ethers.toBeHex(2, 32),
-  );
-  const slot3Data = await ethers.provider.getStorage(
-    surveyAddress,
-    ethers.toBeHex(3, 32),
-  );
-  const slot4Data = await ethers.provider.getStorage(
-    surveyAddress,
-    ethers.toBeHex(4, 32),
-  );
-  const slot5Data = await ethers.provider.getStorage(
-    surveyAddress,
-    ethers.toBeHex(5, 32),
-  );
-  console.log(Buffer.from(slot0Data.slice(2), "hex").toString("utf-8"));
-  console.log(slot0Data);
-  console.log(slot1Data);
-  console.log(slot2Data);
-  console.log(slot3Data);
-  console.log(slot4Data);
-  console.log(slot5Data);
-
   expect(await survey.title()).to.eq(title);
   expect(await survey.description()).to.eq(description);
   expect(await survey.targetNumber()).to.eq(targetNumber);
@@ -179,4 +146,75 @@ it("Survey init", async () => {
   expect(await ethers.provider.getBalance(surveyAddress)).to.eq(
     poolAmount - rewardAmount,
   );
+});
+
+it("Survey storage layout", async () => {
+  const { ethers } = await network.create();
+
+  const title = "막무가내 설문조사";
+  const description =
+    "중앙화된 설문조사로서, 모든 데이터는 공개되지 않으며 설문조사를 게시한자만 볼 수 있습니다.";
+
+  const questions: Question[] = [
+    {
+      question: "누가 내 응답을 관리할때 더 솔직할 수 있을까요?",
+      options: [
+        "구글폼 운영자",
+        "탈중앙화된 블록체인 (관리주체 없으며 모든 데이터 공개)",
+        "상관없음",
+      ],
+    },
+  ];
+
+  const survey = await ethers.deployContract(
+    "Survey",
+    [title, description, 100, questions],
+    {
+      value: ethers.parseEther("100"),
+    },
+  );
+
+  const slot0Data = await ethers.provider.getStorage(
+    survey.getAddress(),
+    ethers.toBeHex(0, 32),
+  );
+  const slot1Data = await ethers.provider.getStorage(
+    survey.getAddress(),
+    ethers.toBeHex(1, 32),
+  );
+  const slot2Data = await ethers.provider.getStorage(
+    survey.getAddress(),
+    ethers.toBeHex(2, 32),
+  );
+  const slot3Data = await ethers.provider.getStorage(
+    survey.getAddress(),
+    ethers.toBeHex(3, 32),
+  );
+  const slot4Data = await ethers.provider.getStorage(
+    survey.getAddress(),
+    ethers.toBeHex(4, 32),
+  );
+  const slot5Data = await ethers.provider.getStorage(
+    survey.getAddress(),
+    ethers.toBeHex(5, 32),
+  );
+
+  const decodeUni = (hex: string) =>
+    Buffer.from(hex.slice(2), "hex").toString("utf-8");
+
+  // primitive type
+  console.log("primitive types");
+  console.log(slot2Data);
+  console.log(slot3Data);
+
+  // long string type: 31바이트를 넘는 문자열은 slot에 포인터(길이)만 남고
+  // 실제 데이터는 keccak256(slot번호)를 시작 위치로 하는 별도 slot에 저장된다.
+  console.log("long string type");
+  console.log(slot1Data); // 0x103 == 259 → (259-1)/2 = 129바이트
+  const pDesc = keccak256(ethers.toBeHex(1, 32));
+  const desc = await ethers.provider.getStorage(
+    await survey.getAddress(),
+    pDesc,
+  );
+  console.log(decodeUni(desc));
 });
