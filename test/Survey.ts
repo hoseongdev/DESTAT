@@ -91,6 +91,39 @@ it("Survey init", async () => {
   // 생성된 Survey에 연결
   const survey = await ethers.getContractAt("Survey", surveyAddress);
 
+  // storage slot 확인: title, description, targetNumber, rewardAmount,
+  // questions, answers 순서로 선언되어 slot 0~5에 각각 대응된다.
+  const slot0Data = await ethers.provider.getStorage(
+    surveyAddress,
+    ethers.toBeHex(0, 32),
+  );
+  const slot1Data = await ethers.provider.getStorage(
+    surveyAddress,
+    ethers.toBeHex(1, 32),
+  );
+  const slot2Data = await ethers.provider.getStorage(
+    surveyAddress,
+    ethers.toBeHex(2, 32),
+  );
+  const slot3Data = await ethers.provider.getStorage(
+    surveyAddress,
+    ethers.toBeHex(3, 32),
+  );
+  const slot4Data = await ethers.provider.getStorage(
+    surveyAddress,
+    ethers.toBeHex(4, 32),
+  );
+  const slot5Data = await ethers.provider.getStorage(
+    surveyAddress,
+    ethers.toBeHex(5, 32),
+  );
+  console.log(slot0Data);
+  console.log(slot1Data);
+  console.log(slot2Data);
+  console.log(slot3Data);
+  console.log(slot4Data);
+  console.log(slot5Data);
+
   expect(await survey.title()).to.eq(title);
   expect(await survey.description()).to.eq(description);
   expect(await survey.targetNumber()).to.eq(targetNumber);
