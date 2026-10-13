@@ -1,12 +1,12 @@
 import { supabase } from "~/postgres/supaclient"
 
-// before rendering Home react component
+// before rendering Dashboard react component
 export async function loader() {
     const {data} = await supabase().from("destat-test").select("*");
     console.log(data);
 }
 
-export default function Home() {
+export default function Dashboard() {
   return <div>
       Hello destat world
     </div>
